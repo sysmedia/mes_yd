@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="yude.mes.com.mes_yd.report.dao.CommonReportMeiZu">
+
+  <select id="selectByPalletCode"  fetchSize="1000" parameterType="map" resultType="yude.mes.com.mes_yd.report.domain.CommonReportMeiZuVO" >
+      WITH SUB AS
+      (SELECT T1.RCARD,
+      T1.mcard,
+      t1.MITEMCODE,
+      T3.VENDORCODE,
+      T4.MATERIALTYPECLASS AS "TYPE",
+      T2.MOCODE,
+      T2.PalletCode,
+      to_char(to_date(T2.mdate || lpad(T2.mtime, 6, 0),'YYYY-MM-DD HH24:MI:SS'),'yyyy-MM-dd HH:mm:ss') as PalletTime,
+      REGEXP_SUBSTR(t3.mname,'[a-zA-Z0-9_-]+',1,1,'i') as  mname
+      FROM TBLONWIPITEM    T1,
+      TBLPALLET2RCARD T2,
+      TBLMATERIAL     T3,
+      TBLOPBOMDETAIL  T4
+      WHERE T1.RCARD = T2.RCARD
+      AND T1.MITEMCODE = T3.MCODE
+      AND T1.MITEMCODE = T4.OBITEMCODE
+
+      AND T2.Palletcode =#{palletCode}
+      ),
+      SUB2 as (
+      select T2.RCARD,
+      T1.mcard,
+      t1.MITEMCODE,
+      T3.VENDORCODE,
+      T4.MATERIALTYPECLASS  "TYPE",
+      T2.MOCODE,
+      T2.PalletCode,
+      T2.PalletTime,
+      T2.mname
+      from TBLONWIPITEM t1, SUB t2, TBLMATERIAL t3, TBLOPBOMDETAIL t4
+      where t1.rcard = t2.mcard
+      AND T1.MITEMCODE = T3.MCODE
+      AND T1.MITEMCODE = T4.OBITEMCODE
+      ),keyparts as
+      (SELECT RCARD,
+      MIN(Palletcode) as Palletcode ,
+      MIN(CASE TYPE WHEN 'TP' THEN MCARD ELSE '' END) AS TP,
+      MIN(CASE TYPE WHEN 'BATTERY' THEN MCARD ELSE '' END) AS BATTERY,
+      MIN(CASE TYPE WHEN 'BATTERY' THEN vendorcode ELSE '' END) AS BatterySupplier,
+      MIN(CASE TYPE WHEN 'FRONTCAMERA' THEN MCARD ELSE '' END) AS FrontCamera,
+      MIN(CASE TYPE WHEN 'FRONTCAMERA' THEN vendorcode ELSE '' END) AS FrontCameraSupplier,
+      MIN(CASE TYPE WHEN 'BACKCAMERA' THEN MCARD ELSE '' END) AS BackCamera,
+      MIN(CASE TYPE WHEN 'BACKCAMERA' THEN vendorcode ELSE '' END) AS BackCameraSupplier,
+      min(mname) mname,
+      MIN(CASE TYPE WHEN 'FAN' THEN MCARD ELSE '' END) AS FAN,
+      MIN(CASE TYPE WHEN 'OBD' THEN MCARD ELSE '' END) AS OBD
+
+      ,MIN(CASE TYPE WHEN 'BATTERY COVER' THEN MCARD ELSE '' END) AS BATTERYCOVER
+      ,MIN(CASE TYPE WHEN 'FRONT CASE' THEN MCARD ELSE '' END) AS FRONTCASE
+      ,MIN(CASE TYPE WHEN 'PLATELET' THEN MCARD ELSE '' END) AS PLATELET
+      FROM SUB2
+      GROUP BY RCARD),
+      keyparttime as
+      (select t1.rcard,
+      MAX(case opcode when 'IMEI' then to_char(to_date(t1.mdate || lpad(t1.mtime, 6, 0), 'YYYY-MM-DD HH24:MI:SS'), 'yyyy-MM-dd HH:mm:ss') else '' end) as IMEIWriteTime,
+      MAX(case opcode when 'LABELPRINT' then to_char(to_date(t1.mdate || lpad(t1.mtime, 6, 0), 'YYYY-MM-DD HH24:MI:SS'), 'yyyy-MM-dd HH:mm:ss') else '' end) as BoxTime,
+      MAX(case opcode when 'PACKING' then to_char(to_date(t1.mdate || lpad(t1.mtime, 6, 0), 'YYYY-MM-DD HH24:MI:SS'), 'yyyy-MM-dd HH:mm:ss') else '' end) as PackTime,
+      MAX(case opcode when 'CHECKVER' then  to_char(to_date(t1.mdate || lpad(t1.mtime, 6, 0),'YYYY-MM-DD HH24:MI:SS'),'yyyy-MM-dd HH:mm:ss') else '' end) as EncryptTime
+      from tblonwip t1, sub t2
+      where t1.MOCODE = t2.mocode
+      and t1.rcard = t2.rcard
+      group by t1.rcard),
+      keypartweight as
+      (select w.rcard, max(w.weight) as weight
+      from tblrcard2weight w, sub s
+      where w.rcard = s.rcard
+      group by w.rcard)
+      ,keypartData as (
+      select K1.RCARD,
+      K1.PalletCode,
+      K1.TP,
+      K1.BATTERY,
+      K1.BatterySupplier,
+      K1.FrontCamera,
+      K1.FrontCameraSupplier,
+      K1.BackCamera,
+      K1.BackCameraSupplier,
+      K2.weight,
+      K3.IMEIWriteTime,
+      K3.BoxTime,
+      K3.PackTime,
+      K3.EncryptTime,
+      k1.mname,
+      K1.FAN,
+      K1.OBD,
+      K1.BATTERYCOVER,
+      K1.FRONTCASE,
+      K1.PLATELET
+      from keyparts k1, keypartweight k2, keyparttime k3
+      where k1.rcard = k2.rcard
+      and k1.rcard = k3.rcard
+      )
+      select *
+
+      from (select t.*, rownum rn
+
+      from (select
+      t1.mname AS PROJECT,
+      substr(t3.mocode, 1, instr( t3.mocode, '-') -1) as  "ORDER",
+      t1.RCARD,
+      t1.PalletCode,
+      t1.TP,
+      t1.BATTERY,
+      nvl((select  vendorname from  TBLVendor  where  vendorcode=t1.BatterySupplier),'') BatterySupplier,
+      t1.FrontCamera,
+      nvl((select  vendorname from  TBLVendor  where  vendorcode=t1.FrontCameraSupplier),'') FrontCameraSupplier,
+      t1.BackCamera,
+      nvl((select  vendorname from  TBLVendor  where  vendorcode=t1.BackCameraSupplier),'') BackCameraSupplier,
+      t1.weight,
+      t1.IMEIWriteTime,
+      t1.BoxTime,
+      t1.PackTime,
+      t1.EncryptTime,
+      t2.IMEI1,
+      t2.IMEI2,
+      t2.MEID,
+      t2.sn    as PcbSN,
+      t2.id1   as BT,
+      t2.id2   as WIFI,
+      t2.psn   as MSN,
+      t2.netcode as Netcode,
+      t2.id4    as COLORID,
+      t2.id3    as SoftVer,
+      T3.COLORID AS COLOR,
+
+      T3.MIUINUM AS FLASH,
+      T3.DEVICE  MODEL,
+
+      T3.USERDATAVERSION AS PARTNO,
+
+      T3.PLATFORM AS EanCODE,
+
+      T3.shipcountry as Destination,
+      T4.cartonno as BoxNo,
+      '' AS SUID,
+      '' AS Screen,
+      '' as SecretKey,
+      '' as EmmcSupplier,
+      '' as PRENO,
+      t2.id5,
+      t2.id6,
+      t2.tsn,
+      t1.FAN,
+      t1.OBD
+      ,t1.BATTERYCOVER
+      ,t1.FRONTCASE
+      ,t1.PLATELET
+      from keypartdata t1, tblmo2imei t2 ,tblmo t3,tblcarton2rcard t4
+      where t1.rcard = t2.tsn
+      and t2.mocode = t3.mocode
+      and t1.rcard = t4.rcard  ) t
+      where rownum &lt;= (${offset}+${limit}))
+      where rn &gt; ${offset}
+  </select>
+
+</mapper>

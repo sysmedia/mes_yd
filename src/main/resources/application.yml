@@ -1,0 +1,82 @@
+
+spring:
+  redis:
+     database: 0
+  # Redis服务器地址
+     host: 127.0.0.1
+  # Redis服务器连接端口
+     port: 6379
+  # Redis服务器连接密码（默认为空）
+     password:
+  # 连接池最大连接数（使用负值表示没有限制）
+     timeout: 100000
+     jedis:
+       pool:
+          max-active: 8
+           # 连接池最大阻塞等待时间（使用负值表示没有限制）
+          max-wait: -1
+           # 连接池中的最大空闲连接
+          max-idle: 8
+           # 连接池中的最小空闲连接
+          min-idle: 0
+  mvc:
+    date-format: yyyy-MM-dd
+  thymeleaf:
+    cache: false
+    mode: html5
+  messages:
+    basename: i18n.login
+  datasource:
+ #   数据源基本配置
+     username: root
+     password: 168168
+     driver-class-name: com.mysql.jdbc.Driver
+     url: jdbc:mysql://127.0.0.1:3306/sakila
+     type: com.alibaba.druid.pool.DruidDataSource
+ #   数据源其他配置
+     initialSize: 5
+     minIdle: 5
+     maxActive: 20
+     maxWait: 60000
+     timeBetweenEvictionRunsMillis: 60000
+     minEvictableIdleTimeMillis: 300000
+     validationQuery: SELECT 1 FROM DUAL
+     testWhileIdle: true
+     testOnBorrow: false
+     testOnReturn: false
+     poolPreparedStatements: true
+ #   配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
+     filters: stat,wall,log4j
+     maxPoolPreparedStatementPerConnectionSize: 20
+     useGlobalDataSourceStat: true
+     connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
+  #profiles:
+    #active: dev
+
+
+mybatis:
+  # 指定全局配置文件位置
+  config-location: classpath:mybatis/mybatis-config.xml
+  # 指定sql映射文件位置
+  mapper-locations: classpath:mybatis/mapper/*.xml
+configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+server:
+  port: 8081
+  tomcat:
+    uri-encoding: utf-8
+logging:
+  level:
+     yude:
+        mes:
+           com:
+              mes_yd:
+                 mapper: debug
+
+#debug: true
+#    schema:
+#      - classpath:sql/department.sql
+#      - classpath:sql/employee.sql
+#
+#server:
+    #port:8081

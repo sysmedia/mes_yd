@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+    <settings>
+
+
+        <!--支持驼峰命名，版本已自动支持-->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <!--为空自动处理-->
+        <setting name="jdbcTypeForNull" value="NULL" />
+
+    </settings>
+    <!--<plugins>-->
+        <!--<plugin interceptor="com.batatas.framework.mybatis.plugin.SqlCostInterceptor"></plugin>-->
+        <!--<plugin interceptor="com.baomidou.mybatisplus.plugins.PaginationInterceptor"></plugin>-->
+        <!--注册执行分析插件-->
+        <!--<plugin interceptor="com.baomidou.mybatisplus.plugins.SqlExplainInterceptor">-->
+            <!--<property name="stopProceed" value="true"></property>-->
+        <!--</plugin>-->
+        <!--性能分析插件-->
+        <!--<plugin interceptor="com.baomidou.mybatisplus.plugins.PerformanceInterceptor">-->
+            <!--<property name="format" value="true"></property>-->
+        <!--</plugin>-->
+        <!-- 乐观锁插件-->
+        <!--<plugin interceptor="com.baomidou.mybatisplus.plugins.OptimisticLockerInterceptor"></plugin>-->
+    <!--</plugins>-->
+
+</configuration>
